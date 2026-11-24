@@ -1,0 +1,25 @@
+pkgbase = qenna-writer-git
+	pkgdesc = Editor de escrita Qenna Writer
+	pkgver = 2.5.0.r319.g4015ba1
+	pkgrel = 1
+	url = https://github.com/Pedrovskigg/qenna-writer
+	arch = x86_64
+	license = custom:Qenna-Writer
+	makedepends = cmake
+	makedepends = ninja
+	makedepends = qt6-tools
+	makedepends = python
+	depends = qt6-base
+	depends = qt6-svg
+	depends = qt6-multimedia
+	depends = qt6-speech
+	depends = zlib
+	provides = qenna-writer
+	conflicts = qenna-writer
+	options = !debug
+	source = qenna-writer::git+https://github.com/Pedrovskigg/qenna-writer.git
+	source = hunspell::git+https://github.com/hunspell/hunspell.git#tag=v1.7.2
+	sha256sums = SKIP
+	sha256sums = SKIP
+
+pkgname = qenna-writer-git
