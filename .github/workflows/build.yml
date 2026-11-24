@@ -16,40 +16,47 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout packaging repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v5
 
-      - name: Check upstream for updates
+      - name: Check upstream
         id: upstream
-        shell: bash
         run: |
           set -euo pipefail
+
           commit="$(git ls-remote https://github.com/Pedrovskigg/qenna-writer.git HEAD | awk '{print $1}')"
+
           if [[ -z "$commit" ]]; then
-            echo "Não foi possível consultar o repositório original."
+            echo "Não foi possível consultar o upstream."
             exit 1
           fi
 
-          git fetch origin gh-pages || true
-          published="$(git show origin/gh-pages:UPSTREAM_COMMIT 2>/dev/null || true)"
+          previous=""
+          curl -fsSL \
+            https://github.com/rguedesdev/qenna-writer-arch/releases/download/current/UPSTREAM_COMMIT \
+            -o /tmp/previous_commit || true
+
+          if [[ -f /tmp/previous_commit ]]; then
+            previous="$(cat /tmp/previous_commit)"
+          fi
 
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
-          if [[ "$commit" == "$published" ]]; then
+
+          if [[ "$commit" == "$previous" ]]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Nenhuma atualização upstream."
+            echo "Nenhuma atualização encontrada."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Nova versão encontrada."
           fi
 
-      - name: Build package in Arch Linux
+      - name: Build in Arch Linux
         if: steps.upstream.outputs.changed == 'true'
         env:
           UPSTREAM_COMMIT: ${{ steps.upstream.outputs.commit }}
         run: |
           set -euo pipefail
+
           docker run --rm \
             -e UPSTREAM_COMMIT="$UPSTREAM_COMMIT" \
             -v "$GITHUB_WORKSPACE:/work" \
@@ -57,7 +64,7 @@ jobs:
             bash -euo pipefail -c '
               pacman -Syu --noconfirm --needed \
                 git cmake ninja qt6-base qt6-svg qt6-multimedia \
-                qt6-speech qt6-tools python
+                qt6-speech qt6-tools python zlib pacman-contrib
 
               useradd --create-home builder
               mkdir -p /tmp/pkg /work/repo
@@ -69,16 +76,28 @@ jobs:
 
               cp /tmp/pkg/*.pkg.tar.zst /work/repo/
               cd /work/repo
+
               repo-add qenna-writer-arch.db.tar.gz ./*.pkg.tar.zst
+              cp qenna-writer-arch.db.tar.gz qenna-writer-arch.db
+
               printf "%s\n" "$UPSTREAM_COMMIT" > UPSTREAM_COMMIT
-              touch .nojekyll
             '
 
-      - name: Publish repository on GitHub Pages
+      - name: Publish package and repository database
         if: steps.upstream.outputs.changed == 'true'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./repo
-          force_orphan: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          files=(repo/*.pkg.tar.zst repo/qenna-writer-arch.db repo/UPSTREAM_COMMIT)
+
+          if gh release view current >/dev/null 2>&1; then
+            gh release upload current "${files[@]}" --clobber
+          else
+            gh release create current "${files[@]}" \
+              --target main \
+              --title "Qenna Writer - repositório Pacman" \
+              --notes "Pacote e índice do repositório Arch Linux, atualizados automaticamente." \
+              --prerelease
+          fi

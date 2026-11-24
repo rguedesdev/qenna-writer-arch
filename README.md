@@ -1,26 +1,26 @@
 # Qenna Writer — repositório Arch Linux
 
-Este repositório empacota o Qenna Writer original:
+O código-fonte original permanece em:
 https://github.com/Pedrovskigg/qenna-writer
 
-O GitHub Actions verifica diariamente se houve atualização no projeto
-original. Quando encontra um novo commit, compila o pacote em Arch Linux
-e publica os arquivos para instalação pelo Pacman.
+O GitHub Actions verifica diariamente se há atualizações no projeto
+original. Quando encontra uma nova versão, compila o pacote em Arch Linux
+e publica o pacote e o índice do Pacman em GitHub Releases.
 
-## Configuração no computador
+## Configuração
 
-Depois da primeira publicação, adicione ao final de /etc/pacman.conf:
+Adicione ao final de /etc/pacman.conf:
 
     [qenna-writer-arch]
     SigLevel = Optional
-    Server = https://rguedesdev.github.io/qenna-writer-arch/
+    Server = https://github.com/rguedesdev/qenna-writer-arch/releases/download/current/
 
 Depois execute:
 
     sudo pacman -Syu
 
-A verificação do upstream é diária. A atualização no computador acontece
-quando o Pacman é executado, não em segundo plano.
+A verificação do upstream é diária. A atualização no computador ocorre
+quando o Pacman é executado.
 
-Este repositório aceita pacotes sem assinatura. A comunicação com o
-GitHub Pages usa HTTPS, mas isso não substitui assinatura criptográfica.
+Os pacotes são publicados sem assinatura criptográfica. A comunicação
+utiliza HTTPS, mas a assinatura GPG poderá ser configurada posteriormente.
